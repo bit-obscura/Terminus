@@ -75,6 +75,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.screen == "home" {
 				m.screen = "list"
 			} else if m.screen == "list" {
+				if m.items[m.cursor] == "settings" {
+					m.screen = "settings"
+				} else if m.items[m.cursor] == "applications" {
+					m.screen = "applications"
+				} else if m.items[m.cursor] == "base commands" {
+					m.screen = "commands"
+				} else if m.items[m.cursor] == "explore" {
+					m.screen = "explore"
+				}
 				_, ok := m.selected[m.cursor]
 				if ok {
 					delete(m.selected, m.cursor)
@@ -83,17 +92,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "backspace":
-			if m.screen == "list" {
+			if m.screen == "home" {
+				return m, tea.Quit
+			} else if m.screen == "list" {
 				m.screen = "home"
+			} else if m.screen == "settings" {
+				m.screen = "list"
+			} else if m.screen == "applications" {
+				m.screen = "list"
+			} else if m.screen == "commands" {
+				m.screen = "list"
+			} else if m.screen == "explore" {
+				m.screen = "list"
 			}
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up":
-			if m.screen == "list" && m.cursor > 0 {
+			if m.cursor > 0 {
 				m.cursor--
 			}
 		case "down":
-			if m.screen == "list" && m.cursor < len(m.items)-1 {
+			if m.cursor < len(m.items)-1 {
 				m.cursor++
 			}
 		}
@@ -108,14 +127,14 @@ func (m model) View() string {
 		return homeView(m)
 	case "list":
 		return listView(m)
-		// case "settings":
-		// 	return settingsView(m)
-		// case "applications":
-		// 	return applicationsView(m)
-		// case "base commands":
-		// 	return baseCommandsView(m)
-		// case "explore":
-		// 	return exploreView(m)
+	case "settings":
+		return settingsView()
+	case "applications":
+		return applicationsView()
+	case "commands":
+		return baseCommandsView()
+	case "explore":
+		return exploreView()
 	}
 
 	return ""
@@ -137,17 +156,42 @@ func listView(m model) string {
 		cursor := " " // no cursor
 		if m.cursor == i {
 			cursor = ">" // cursor
+			item = lipgloss.NewStyle().Foreground(lipgloss.Color("#01DC94")).Render(item)
 		}
 
-		checked := " " // not selected
-		if _, ok := m.selected[i]; ok {
-			checked = "x" // selected
+		_, ok := m.selected[i]
+		if ok {
+			m.Update(item)
 		}
 
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, item)
+		s += fmt.Sprintf("%s %s %s\n", cursor, "-", item)
 	}
 
 	return fmt.Sprintf("%s\n%s\n%s", s, subtitle, message)
+}
+
+func settingsView() string {
+	title := titleStyle.Render("Settings")
+
+	return title
+}
+
+func applicationsView() string {
+	title := titleStyle.Render("Applications")
+
+	return title
+}
+
+func baseCommandsView() string {
+	title := titleStyle.Render("Base Commands")
+
+	return title
+}
+
+func exploreView() string {
+	title := titleStyle.Render("Explore")
+
+	return title
 }
 
 // Main function
