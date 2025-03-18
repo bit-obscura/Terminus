@@ -1,89 +1,136 @@
 package main
 
 import (
+	"os"
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/gamut"
+)
+
+var (
+
+	// General
+	normal = lipgloss.Color("EEEEEE")
+	hidden = lipgloss.Color("575755")
+	teal   = lipgloss.Color("#006883")
+	lblue  = lipgloss.Color("#31D8EE")
+	green  = lipgloss.Color("#01DC94")
+	yellow = lipgloss.Color("#DCFE54")
+
+	// Styles
+	base   = lipgloss.NewStyle().Foreground(normal)
+	blends = gamut.Blends(lipgloss.Color(teal), lipgloss.Color(lblue), 50)
+
+	titleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color(lblue)).Bold(true)
+	subtitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(teal)).Italic(true)
+	fakeBtnStyle  = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(green)).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(green)).
+			Padding(0, 1).
+			Align(lipgloss.Center)
+
+	// Borders
+	borderStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(normal)).
+			Margin(1, 2).
+			Padding(2, 4)
 )
 
 type Screen int
 
 const (
-	HomeScreen     Screen = iota // HomeScreen is the default screen
-	SelectScreen                 // SelectScreen: the user can select an option between settings, apps, commands and explore
-	ActivityScreen               // ActivityScreen: the user can see the activity of the selected option
+	HomeScreen  Screen = iota
+	columnWidth        = 20
 )
 
 type RootModel struct {
 	CurrentScreen Screen
-	Home          *HomeModel
-	Select        *SelectModel
-	// Activity      *ActivityModel
+	blink         bool
+	width         int
+	height        int
 }
 
 func NewRootModel() *RootModel {
 	return &RootModel{
 		CurrentScreen: HomeScreen,
-		Home:          NewHomeModel(),
-		Select:        NewSelectModel(),
-		// Activity:      NewActivityModel(),
 	}
 }
 
-// RootModel has to be passed by reference instead of by value.
-// This is because each screen model contains sync/atomic.Bool from the bubblezone package.
-// Since it's not allowed to copy a struct with a sync/atomic.Bool, we have to pass RootModel by reference.
+type blinkMsg struct{}
 
-func (r *RootModel) Init() tea.Cmd {
-	return nil
+func (m *RootModel) Init() tea.Cmd {
+	return tea.Tick(time.Second/2, func(time.Time) tea.Msg {
+		return blinkMsg{}
+	})
 }
 
-func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
+func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	// Handle key events
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			if r.CurrentScreen == HomeScreen {
-				r.CurrentScreen = SelectScreen
-			}
-		case "esc":
-			if r.CurrentScreen == SelectScreen {
-				r.CurrentScreen = HomeScreen
-			} else if r.CurrentScreen == ActivityScreen {
-				r.CurrentScreen = SelectScreen
-			}
+			os.Exit(0)
+		case "ctrl+c":
+			return m, tea.Quit
 		}
-		// Handle mouse events
-	case tea.MouseMsg:
-		switch r.CurrentScreen {
-		case HomeScreen:
-			var m tea.Model
-			m, cmd = r.Home.Update(msg)
-			r.Home = m.(*HomeModel)
-		case SelectScreen:
-			var m tea.Model
-			m, cmd = r.Select.Update(msg)
-			r.Select = m.(*SelectModel)
-			// case ActivityScreen:
-			// 	var m tea.Model
-			// 	m, cmd = r.Activity.Update(msg)
-			// 	r.Activity = m.(*ActivityModel)
+	case blinkMsg:
+		m.blink = !m.blink
+		return m, tea.Tick(time.Second/2, func(time.Time) tea.Msg {
+			return blinkMsg{}
+		})
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+
+		// Maintain 4:1 aspect ratio
+		if float64(m.width)/float64(m.height) > 4.0 {
+			m.width = int(float64(m.height) * 4.0)
+		} else {
+			m.height = int(float64(m.width) / 4.0)
 		}
+
+		if m.width > 120 || m.height > 40 { // Max 80x24
+			m.width = 120
+			m.height = 40
+		}
+
 	}
 
-	return r, cmd
+	return m, nil
 }
 
-func (r *RootModel) View() string {
-	switch r.CurrentScreen {
-	case HomeScreen:
-		return r.Home.View()
-	case SelectScreen:
-		return r.Select.View()
-	// case ActivityScreen:
-	// 	return r.Activity.View()
-	default:
-		return ""
+func (m *RootModel) View() string {
+	viewportWidth, viewportHeight := 80, 24 // Default size
+
+	if m.width > 0 && m.height > 0 {
+		viewportWidth, viewportHeight = m.width, m.height
 	}
+
+	containerWidth := viewportWidth - 6
+	containerHeight := viewportHeight - 4
+
+	container := borderStyle.
+		Width(containerWidth).
+		Height(containerHeight).
+		Align(lipgloss.Center, lipgloss.Center)
+
+	title := titleStyle.Render("TUI")
+	subtitle := subtitleStyle.Render("powered by CodeLab")
+
+	var btn string
+	if m.blink {
+		btn = fakeBtnStyle.Render("Enter")
+	} else {
+		btn = fakeBtnStyle.Copy().Border(lipgloss.HiddenBorder()).Render(" ")
+	}
+
+	footer := lipgloss.NewStyle().Foreground(lipgloss.Color(hidden)).Render("Press 'Enter' to continue or 'Ctrl+c' to quit")
+
+	content := container.Render(title + "\n" + subtitle + "\n\n" + btn + "\n\n" + footer)
+
+	return content
 }
