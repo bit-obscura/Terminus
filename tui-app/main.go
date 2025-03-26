@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -16,6 +15,5 @@ func main() {
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error starting the TUI:", err)
-		os.Exit(1)
 	}
 }

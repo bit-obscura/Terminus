@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -73,7 +72,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			os.Exit(0)
+			return m, nil
 		case "ctrl+c":
 			return m, tea.Quit
 		}
@@ -97,7 +96,6 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.width = 120
 			m.height = 40
 		}
-
 	}
 
 	return m, nil
