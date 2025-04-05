@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,20 +14,20 @@ type ActionModel struct {
 	width         int
 	height        int
 
-	xPos    int
-	yPos    int
-	tCursor []int
-	int     // x, y
-	active  bool
-	id      int
-	item    string
+	grid       Grid
+	parentGrid Grid
+	xPos       int
+	yPos       int
 }
 
-func NewActionModel() *ActionModel {
+func NewActionModel(grid Grid) *ActionModel {
 	return &ActionModel{
-		CurrentScreen: HomeScreen,
+		CurrentScreen: ActionScreen,
+		grid:          grid,
 	}
 }
+
+type Grid [][]interface{}
 
 func (m ActionModel) Init() tea.Cmd {
 	return tea.Tick(time.Second/2, func(time.Time) tea.Msg {
@@ -34,76 +35,48 @@ func (m ActionModel) Init() tea.Cmd {
 	})
 }
 
-func (m ActionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *ActionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "enter":
-			return m, nil
 		case "up":
 			m.yPos--
 			if m.yPos < 0 {
-				m.yPos = m.yPos.length
+				m.yPos = len(m.grid) - 1 // Wrap around to the bottom
 			}
-			m.tCursor = append(m.tCursor, m.xPos, m.yPos)
-			return m, nil
+			m.xPos = 0 // Reset xPos when moving to a new row
 		case "down":
 			m.yPos++
-			if m.yPos > m.yPos.length {
-				m.yPos = 0
+			if m.yPos >= len(m.grid) {
+				m.yPos = 0 // Wrap around to the top
 			}
-			m.tCursor = append(m.tCursor, m.xPos, m.yPos)
-			return m, nil
+			m.xPos = 0 // Reset xPos when moving to a new row
 		case "left":
+			m.xPos--
 			if m.xPos < 0 {
-				m.xPos = m.xPos.length
-			} else if m.xPos.length == 0 {
-				m.yPos--
-				if m.yPos < 0 {
-					m.yPos = m.yPos.length
-				}
-				m.xPos = m.xPos.length
-			} else {
-				m.xPos--
+				m.xPos = len(m.grid[m.yPos]) - 1 // Wrap around to the last column in the row
 			}
-			m.tCursor = append(m.tCursor, m.xPos, m.yPos)
-			return m, nil
 		case "right":
-			if m.xPos > m.xPos.length {
-				m.xPos = 0
-			} else if m.xPos.length == 0 {
-				m.yPos++
-				if m.yPos > m.yPos.length {
-					m.yPos = 0
-				}
-				m.xPos = 0
-			} else {
-				m.xPos++
+			m.xPos++
+			if m.xPos >= len(m.grid[m.yPos]) {
+				m.xPos = 0 // Wrap around to the first column in the row
 			}
-			m.tCursor = append(m.tCursor, m.xPos, m.yPos)
-			return m, nil
+		case "enter":
+			// Handle nested list navigation
+			if nestedList, ok := m.grid[m.yPos][m.xPos].([]interface{}); ok {
+				m.parentGrid = m.grid                // Save the current grid
+				m.grid = [][]interface{}{nestedList} // Replace grid with the nested list
+				m.xPos, m.yPos = 0, 0                // Reset position
+			}
+		case "backspace":
+			// Handle going back to the parent grid
+			if m.parentGrid != nil {
+				m.grid = m.parentGrid
+				m.parentGrid = nil
+				m.xPos, m.yPos = 0, 0
+			}
 		case "ctrl+c":
 			return m, tea.Quit
-		}
-	case blinkMsg:
-		m.blink = !m.blink
-		return m, tea.Tick(time.Second/2, func(time.Time) tea.Msg {
-			return blinkMsg{}
-		})
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-
-		// Maintain 4:1 aspect ratio
-		if float64(m.width)/float64(m.height) > 4.0 {
-			m.width = int(float64(m.height) * 4.0)
-		} else {
-			m.height = int(float64(m.width) / 4.0)
-		}
-
-		if m.width > 120 || m.height > 40 { // Max 80x24
-			m.width = 120
-			m.height = 40
 		}
 	}
 
@@ -111,34 +84,22 @@ func (m ActionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ActionModel) View() string {
-	// Define the styles for the cursor and the text
-	cursorStyle := lipgloss.NewStyle().Background(lipgloss.Color("#FF00FF")).Foreground(lipgloss.Color("#000000"))
-	textStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#000000"))
+	var output string
 
-	// Define the cursor position
-	cursorPosition := m.tCursor[len(m.tCursor)-2:]
-
-	// Define the text
-	text := "Hello, World!"
-
-	// Define the cursor
-	cursor := "█"
-
-	// Define the final text
-	finalText := ""
-
-	// Loop through the text
-	for i, char := range text {
-		// Check if the cursor is at the current position
-		if cursorPosition[0] == i {
-			// Add the cursor to the final text
-			finalText += cursor
+	for y, row := range m.grid {
+		for x, cell := range row {
+			cellStr := fmt.Sprintf("%v", cell)
+			if x == m.xPos && y == m.yPos {
+				output += lipgloss.NewStyle().
+					Foreground(lipgloss.Color("black")).
+					Background(lipgloss.Color("white")).
+					Render(cellStr) + " "
+			} else {
+				output += cellStr + " "
+			}
 		}
-
-		// Add the character to the final text
-		finalText += string(char)
+		output += "\n"
 	}
 
-	// Return the final text with the cursor
-	return cursorStyle.Render(finalText)
+	return output
 }

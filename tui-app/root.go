@@ -42,8 +42,8 @@ var (
 type Screen int
 
 const (
-	HomeScreen  Screen = iota
-	columnWidth        = 20
+	HomeScreen Screen = iota
+	ActionScreen
 )
 
 type RootModel struct {
@@ -72,7 +72,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			return m, nil
+			return NewActionModel(), nil
 		case "ctrl+c":
 			return m, tea.Quit
 		}
