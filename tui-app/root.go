@@ -61,6 +61,18 @@ func NewRootModel() *RootModel {
 
 type blinkMsg struct{}
 
+func createContainer(content string, width, height int) string {
+	containerWidth := width - 6
+	containerHeight := height - 4
+
+	container := borderStyle.
+		Width(containerWidth).
+		Height(containerHeight).
+		Align(lipgloss.Center, lipgloss.Center)
+
+	return container.Render(content)
+}
+
 func (m *RootModel) Init() tea.Cmd {
 	return tea.Tick(time.Second/2, func(time.Time) tea.Msg {
 		return blinkMsg{}
@@ -72,7 +84,9 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			return NewActionModel(), nil
+			if m.CurrentScreen == HomeScreen {
+				return NewActionModel(), nil
+			}
 		case "ctrl+c":
 			return m, tea.Quit
 		}
@@ -108,14 +122,6 @@ func (m *RootModel) View() string {
 		viewportWidth, viewportHeight = m.width, m.height
 	}
 
-	containerWidth := viewportWidth - 6
-	containerHeight := viewportHeight - 4
-
-	container := borderStyle.
-		Width(containerWidth).
-		Height(containerHeight).
-		Align(lipgloss.Center, lipgloss.Center)
-
 	title := titleStyle.Render("TUI")
 	subtitle := subtitleStyle.Render("powered by CodeLab")
 
@@ -128,7 +134,7 @@ func (m *RootModel) View() string {
 
 	footer := lipgloss.NewStyle().Foreground(lipgloss.Color(hidden)).Render("Press 'Enter' to continue or 'Ctrl+c' to quit")
 
-	content := container.Render(title + "\n" + subtitle + "\n\n" + btn + "\n\n" + footer)
+	content := title + "\n" + subtitle + "\n\n" + btn + "\n\n" + footer
 
-	return content
+	return createContainer(content, viewportWidth, viewportHeight)
 }
