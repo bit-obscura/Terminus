@@ -15,15 +15,42 @@ type ActionModel struct {
 func NewActionModel() *ActionModel {
 	item := [][]GridItem{
 		{
+			ButtonItem{
+				Title:   "Home button",
+				Content: "Back to Home",
+				ID:      "homeBtn",
+				Style:   lipgloss.NewStyle(),
+			},
+
 			TextItem{
-				Content: "Elemento selezionato!",
-				Style:   lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true),
+				Title:   "Wallet address",
+				Content: "0x1234567890abcdef1234567890abcdef12345678",
+				ID:      "walletAddress",
+				Style:   lipgloss.NewStyle(),
+			},
+		},
+
+		{
+			ListItem{
+				Title:    "Actions",
+				Items:    []string{"Settings", "Apps", "Goal Commands", "Explore"},
+				Cursor:   0,
+				Selected: map[int]struct{}{},
+				ID:       "actionsList",
+				Style:    lipgloss.NewStyle(),
+			},
+
+			TextItem{
+				Title:   "ActionPreview",
+				Content: "This is a preview of the selected action.",
+				ID:      "actionPreview",
+				Style:   lipgloss.NewStyle(),
 			},
 		},
 	}
 
 	return &ActionModel{
-		grid:          NewGrid(1, 1, item),
+		grid:          NewGrid(2, 2, item),
 		CurrentScreen: ActionScreen,
 	}
 }
@@ -70,7 +97,4 @@ func (m ActionModel) View() string {
 		viewportWidth, viewportHeight = m.width, m.height
 	}
 
-	content := m.grid.View()
-
-	return createContainer(content, viewportWidth, viewportHeight)
 }

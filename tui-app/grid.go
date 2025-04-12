@@ -1,11 +1,5 @@
 package main
 
-import (
-	"strings"
-
-	"github.com/charmbracelet/lipgloss"
-)
-
 type GridItem interface {
 	View() string
 }
@@ -44,60 +38,4 @@ func (g *Grid) MoveCursor(dx, dy int) {
 }
 
 func (g *Grid) View() string {
-	var sb strings.Builder
-	for y := 0; y < g.Rows; y++ {
-		for x := 0; x < g.Cols; x++ {
-			var cell string
-			if y < len(g.Items) && x < len(g.Items[y]) && g.Items[y][x] != nil {
-				cell = g.Items[y][x].View()
-			} else {
-				cell = ""
-			}
-			if x == g.CursorX && y == g.CursorY {
-				cell = lipgloss.NewStyle().Bold(true).Render(cell)
-			}
-			if x > 0 {
-				sb.WriteString(" | ")
-			}
-			sb.WriteString(cell)
-		}
-		sb.WriteString("\n")
-	}
-	return sb.String()
-}
-
-type TextItem struct {
-	Content string
-	Style   lipgloss.Style
-}
-
-func (t TextItem) View() string {
-	return t.Style.Render(t.Content)
-}
-
-type ListItem struct {
-	Items []string
-	Style lipgloss.Style
-}
-
-func (l ListItem) View() string {
-	return l.Style.Render("- " + strings.Join(l.Items, "\n- "))
-}
-
-type TableItem struct {
-	Data   [][]string
-	Header lipgloss.Style
-}
-
-func (t TableItem) View() string {
-	var sb strings.Builder
-	for i, row := range t.Data {
-		line := strings.Join(row, " \t ")
-		if i == 0 {
-			sb.WriteString(t.Header.Render(line) + "\n")
-		} else {
-			sb.WriteString(line + "\n")
-		}
-	}
-	return sb.String()
 }
