@@ -85,8 +85,14 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			if m.CurrentScreen == HomeScreen {
-				return NewActionModel(), nil
+				m.CurrentScreen = ActionScreen
 			}
+			return m, nil
+		case "esc":
+			if m.CurrentScreen == ActionScreen {
+				m.CurrentScreen = HomeScreen
+			}
+			return m, nil
 		case "ctrl+c":
 			return m, tea.Quit
 		}
@@ -116,25 +122,32 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RootModel) View() string {
-	viewportWidth, viewportHeight := 80, 24 // Default size
+	viewportWidth, viewportHeight := 120, 30 // Default size
 
 	if m.width > 0 && m.height > 0 {
 		viewportWidth, viewportHeight = m.width, m.height
 	}
 
-	title := titleStyle.Render("TUI")
-	subtitle := subtitleStyle.Render("powered by CodeLab")
+	switch m.CurrentScreen {
+	case HomeScreen:
+		title := titleStyle.Render("TUI")
+		subtitle := subtitleStyle.Render("powered by CodeLab")
 
-	var btn string
-	if m.blink {
-		btn = fakeBtnStyle.Render("Enter")
-	} else {
-		btn = fakeBtnStyle.Copy().Border(lipgloss.HiddenBorder()).Render(" ")
+		var btn string
+		if m.blink {
+			btn = fakeBtnStyle.Render("Enter")
+		} else {
+			btn = fakeBtnStyle.Copy().Border(lipgloss.HiddenBorder()).Render(" ")
+		}
+
+		footer := lipgloss.NewStyle().Foreground(lipgloss.Color(hidden)).Render("Press 'Enter' to continue or 'Ctrl+c' to quit")
+
+		content := title + "\n" + subtitle + "\n\n" + btn + "\n\n" + footer
+
+		return createContainer(content, viewportWidth, viewportHeight)
+	case ActionScreen:
+		return NewActionModel().View()
 	}
 
-	footer := lipgloss.NewStyle().Foreground(lipgloss.Color(hidden)).Render("Press 'Enter' to continue or 'Ctrl+c' to quit")
-
-	content := title + "\n" + subtitle + "\n\n" + btn + "\n\n" + footer
-
-	return createContainer(content, viewportWidth, viewportHeight)
+	return ""
 }
