@@ -11,9 +11,13 @@ type TableModel struct {
 }
 
 type Column struct {
-	Key   string
-	Title string
-	Width int
+	Key    string
+	Title  string
+	Width  int
+	Object struct {
+		item   string
+		cursor int
+	}
 }
 
 func NewTableModel(columns []table.Column, rows []table.Row) *TableModel {
