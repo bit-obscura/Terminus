@@ -56,9 +56,17 @@ func (m *ProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if _, ok := m.selected[m.cursor]; ok {
 				delete(m.selected, m.cursor)
+				if m.options[m.cursor] == "Settings" {
+					Focus = ""
+				}
 			} else {
 				m.selected = make(map[int]struct{})
 				m.selected[m.cursor] = struct{}{}
+				if m.options[m.cursor] == "Settings" {
+					Focus = "SettingsView"
+				} else {
+					Focus = ""
+				}
 			}
 		}
 	}

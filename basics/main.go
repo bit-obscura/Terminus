@@ -10,6 +10,8 @@ var p *tea.Program
 
 type SessionState int
 
+var Focus string
+
 const (
 	MainView SessionState = iota
 	ProjectView
@@ -20,9 +22,9 @@ const (
 )
 
 type MainModel struct {
-	CurrentState SessionState
-	ProjectModel *ProjectModel
-	// SettingsModel tea.Model
+	CurrentState  SessionState
+	ProjectModel  *ProjectModel
+	SettingsModel *SettingsModel
 	// ApplicationsModel tea.Model
 	// CmdGoalsModel tea.Model
 	// ExploreModel tea.Model
@@ -30,8 +32,9 @@ type MainModel struct {
 
 func NewMainModel() *MainModel {
 	return &MainModel{
-		CurrentState: MainView,
-		ProjectModel: NewProjectModel(),
+		CurrentState:  MainView,
+		ProjectModel:  NewProjectModel(),
+		SettingsModel: NewSettingsModel(),
 	}
 }
 
@@ -43,6 +46,12 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.CurrentState == MainView {
+
+			// When in the main view, every selection will be reset
+			m.ProjectModel.selected = make(map[int]struct{})
+			m.ProjectModel.cursor = 0
+			Focus = ""
+
 			switch msg.String() {
 			case "enter":
 				m.CurrentState = ProjectView
@@ -62,6 +71,18 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ProjectModel = updatedProjectModel
 			}
 			return m, cmd
+		} else if m.CurrentState == SettingsView {
+			switch msg.String() {
+			case "esc":
+				m.CurrentState = MainView
+				return m, nil
+			}
+			var cmd tea.Cmd
+			updatedModel, cmd := m.SettingsModel.Update(msg)
+			if updatedSettingsModel, ok := updatedModel.(*SettingsModel); ok {
+				m.SettingsModel = updatedSettingsModel
+			}
+			return m, cmd
 		}
 	}
 
@@ -72,8 +93,17 @@ func (m *MainModel) View() string {
 	if m.CurrentState == MainView {
 		return "Main View\n\nPress Enter to go to Project View\nPress Ctrl+C to exit\n"
 	} else if m.CurrentState == ProjectView {
-		return m.ProjectModel.View()
+		if Focus == "SettingsView" {
+			return fmt.Sprintf(
+				"%s\n\n%s",
+				m.ProjectModel.View(),
+				m.SettingsModel.View(),
+			)
+		} else {
+			return m.ProjectModel.View()
+		}
 	}
+
 	return ""
 }
 
