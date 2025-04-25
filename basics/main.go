@@ -22,19 +22,22 @@ const (
 )
 
 type MainModel struct {
-	CurrentState  SessionState
-	ProjectModel  *ProjectModel
-	SettingsModel *SettingsModel
-	// ApplicationsModel tea.Model
-	// CmdGoalsModel tea.Model
-	// ExploreModel tea.Model
+	CurrentState      SessionState
+	ProjectModel      *ProjectModel
+	SettingsModel     *SettingsModel
+	ApplicationsModel *ApplicationsModel
+	CmdGoalsModel     *CmdGoalsModel
+	ExploreModel      *ExploreModel
 }
 
 func NewMainModel() *MainModel {
 	return &MainModel{
-		CurrentState:  MainView,
-		ProjectModel:  NewProjectModel(),
-		SettingsModel: NewSettingsModel(),
+		CurrentState:      MainView,
+		ProjectModel:      NewProjectModel(),
+		SettingsModel:     NewSettingsModel(),
+		ApplicationsModel: NewApplicationsModel(),
+		CmdGoalsModel:     NewCmdGoalsModel(),
+		ExploreModel:      NewExploreModel(),
 	}
 }
 
@@ -83,6 +86,42 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.SettingsModel = updatedSettingsModel
 			}
 			return m, cmd
+		} else if m.CurrentState == ApplicationsView {
+			switch msg.String() {
+			case "esc":
+				m.CurrentState = MainView
+				return m, nil
+			}
+			var cmd tea.Cmd
+			updatedModel, cmd := m.ApplicationsModel.Update(msg)
+			if updatedApplicationsModel, ok := updatedModel.(*ApplicationsModel); ok {
+				m.ApplicationsModel = updatedApplicationsModel
+			}
+			return m, cmd
+		} else if m.CurrentState == CmdGoalsView {
+			switch msg.String() {
+			case "esc":
+				m.CurrentState = MainView
+				return m, nil
+			}
+			var cmd tea.Cmd
+			updatedModel, cmd := m.CmdGoalsModel.Update(msg)
+			if updatedCmdGoalsModel, ok := updatedModel.(*CmdGoalsModel); ok {
+				m.CmdGoalsModel = updatedCmdGoalsModel
+			}
+			return m, cmd
+		} else if m.CurrentState == ExploreView {
+			switch msg.String() {
+			case "esc":
+				m.CurrentState = MainView
+				return m, nil
+			}
+			var cmd tea.Cmd
+			updatedModel, cmd := m.ExploreModel.Update(msg)
+			if updatedExploreModel, ok := updatedModel.(*ExploreModel); ok {
+				m.ExploreModel = updatedExploreModel
+			}
+			return m, cmd
 		}
 	}
 
@@ -90,21 +129,43 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MainModel) View() string {
-	if m.CurrentState == MainView {
-		return "Main View\n\nPress Enter to go to Project View\nPress Ctrl+C to exit\n"
-	} else if m.CurrentState == ProjectView {
-		if Focus == "SettingsView" {
+	switch m.CurrentState {
+	case MainView:
+		return "Main View\n\nPress ENTER to go to the project view.\nPress ESC to quit.\n"
+
+	case ProjectView:
+		switch Focus {
+		case "SettingsView":
 			return fmt.Sprintf(
 				"%s\n\n%s",
 				m.ProjectModel.View(),
 				m.SettingsModel.View(),
 			)
-		} else {
+		case "ApplicationsView":
+			return fmt.Sprintf(
+				"%s\n\n%s",
+				m.ProjectModel.View(),
+				m.ApplicationsModel.View(),
+			)
+		case "Commands GoalsView":
+			return fmt.Sprintf(
+				"%s\n\n%s",
+				m.ProjectModel.View(),
+				m.CmdGoalsModel.View(),
+			)
+		case "ExploreView":
+			return fmt.Sprintf(
+				"%s\n\n%s",
+				m.ProjectModel.View(),
+				m.ExploreModel.View(),
+			)
+		default:
 			return m.ProjectModel.View()
 		}
-	}
 
-	return ""
+	default:
+		return ""
+	}
 }
 
 func main() {

@@ -22,7 +22,7 @@ func NewProjectModel() *ProjectModel {
 		options: []string{
 			"Settings",
 			"Applications",
-			"Cmd Goals",
+			"Commands Goals",
 			"Explore",
 		},
 		cursor:   0,
@@ -49,25 +49,7 @@ func (m *ProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "enter", " ":
-
-			// User can select only one option at a time
-			// If user selects more than one option, the last one will be the selected one
-			// and the previous ones will be unselected
-
-			if _, ok := m.selected[m.cursor]; ok {
-				delete(m.selected, m.cursor)
-				if m.options[m.cursor] == "Settings" {
-					Focus = ""
-				}
-			} else {
-				m.selected = make(map[int]struct{})
-				m.selected[m.cursor] = struct{}{}
-				if m.options[m.cursor] == "Settings" {
-					Focus = "SettingsView"
-				} else {
-					Focus = ""
-				}
-			}
+			Focus = HandlePreview(m.cursor, m.options, m.selected)
 		}
 	}
 
@@ -98,4 +80,22 @@ func (m *ProjectModel) View() string {
 	}
 
 	return s + "\nPress q to quit.\n"
+}
+
+// User can select only one option at a time
+// If user selects more than one option, the last one will be the selected one
+// and the previous ones will be unselected
+
+func HandlePreview(cursor int, options []string, selected map[int]struct{}) string {
+
+	if _, ok := selected[cursor]; ok { // If the cursor is already selected, unselect it
+		delete(selected, cursor)
+		return "" // Reset the focus if the deleted option was selected
+	} else {
+		for i := range selected { // Unselect all other options
+			delete(selected, i)
+		}
+		selected[cursor] = struct{}{}
+		return options[cursor] + "View" // Return the view of the selected option
+	}
 }
