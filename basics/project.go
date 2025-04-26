@@ -49,7 +49,9 @@ func (m *ProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "enter", " ":
-			Focus = HandlePreview(m.cursor, m.options, m.selected)
+			return m, func() tea.Msg {
+				return HandlePreview(m.cursor, m.options, m.selected)
+			}
 		}
 	}
 
@@ -86,7 +88,7 @@ func (m *ProjectModel) View() string {
 // If user selects more than one option, the last one will be the selected one
 // and the previous ones will be unselected
 
-func HandlePreview(cursor int, options []string, selected map[int]struct{}) string {
+func HandlePreview(cursor int, options []string, selected map[int]struct{}) tea.Msg {
 
 	if _, ok := selected[cursor]; ok { // If the cursor is already selected, unselect it
 		delete(selected, cursor)
