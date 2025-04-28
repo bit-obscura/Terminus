@@ -90,14 +90,15 @@ func (m *ProjectModel) View() string {
 
 func HandlePreview(Cursor int, Options []string, Selected map[int]struct{}) tea.Msg {
 
-	if _, ok := Selected[Cursor]; ok { // If the Cursor is already Selected, unselect it
-		delete(Selected, Cursor)
-		return "" // Reset the focus if the deleted option was Selected
-	} else {
-		for i := range Selected { // Unselect all other Options
-			delete(Selected, i)
+	if _, ok := Selected[Cursor]; ok {
+		// Unselect all previous options
+		for i := range Selected {
+			if i != Cursor {
+				delete(Selected, i)
+			}
 		}
-		Selected[Cursor] = struct{}{}
-		return Options[Cursor] + "View" // Return the view of the Selected option
 	}
+	// Select the current option
+	Selected[Cursor] = struct{}{}
+	return Options[Cursor] + "View"
 }

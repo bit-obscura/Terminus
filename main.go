@@ -9,9 +9,7 @@ import (
 
 var p *tea.Program
 
-
 var Focus string
-
 
 type MainModel struct {
 	CurrentState      SessionState
@@ -64,6 +62,11 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			updatedModel, cmd := m.ProjectModel.Update(msg)
 			if updatedProjectModel, ok := updatedModel.(*ProjectModel); ok {
 				m.ProjectModel = updatedProjectModel
+			}
+			if cmd != nil {
+				if focusMsg, ok := cmd().(string); ok {
+					Focus = focusMsg
+				}
 			}
 			return m, cmd
 		} else if m.CurrentState == SettingsView {
@@ -123,7 +126,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MainModel) View() string {
 	switch m.CurrentState {
 	case MainView:
-		return "Main View\n\nPress ENTER to go to the project view.\nPress ESC to quit.\n"
+		return "Main View\n\nPress 'ENTER' to go to the project view.\nPress 'Ctrl+c' or 'q' to quit.\n"
 
 	case ProjectView:
 		switch Focus {
