@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/algorand/avm-abi v0.2.0 // indirect
 	github.com/algorand/go-codec/codec v1.1.10 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
